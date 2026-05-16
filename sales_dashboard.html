@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Superstore Sales Dashboard — Nelson Alves</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0D0F14;
+    --surface: #151820;
+    --surface2: #1C2030;
+    --border: #252A3A;
+    --blue: #4DAAFF;
+    --green: #3DFFA0;
+    --orange: #FF8C42;
+    --red: #FF4D6D;
+    --text: #E8EAF0;
+    --muted: #6B7280;
+    --accent: #4DAAFF;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 24px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .logo-icon {
+    width: 38px; height: 38px;
+    background: var(--blue);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  .logo-text {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+
+  .logo-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    background: rgba(77,170,255,0.12);
+    color: var(--blue);
+    border: 1px solid rgba(77,170,255,0.25);
+    padding: 5px 12px;
+    border-radius: 20px;
+  }
+
+  .filter-group {
+    display: flex;
+    gap: 8px;
+  }
+
+  .filter-btn {
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--surface2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .filter-btn.active, .filter-btn:hover {
+    background: var(--blue);
+    color: #000;
+    border-color: var(--blue);
+  }
+
+  /* ── MAIN ── */
+  main {
+    padding: 32px 40px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .page-title {
+    font-size: 13px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .page-heading {
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 32px;
+  }
+
+  .page-heading span { color: var(--blue); }
+
+  /* ── KPI CARDS ── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px 24px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+
+  .kpi-card:hover { transform: translateY(-2px); border-color: var(--blue); }
+
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--kpi-color, var(--blue));
+  }
+
+  .kpi-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 10px;
+  }
+
+  .kpi-value {
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .kpi-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    margin-top: 8px;
+  }
+
+  .kpi-up { color: var(--green); }
+  .kpi-down { color: var(--red); }
+
+  /* ── CHART GRID ── */
+  .chart-grid {
+    display: grid;
+    gap: 20px;
+  }
+
+  .row-2 { grid-template-columns: 1fr 1fr; }
+  .row-3 { grid-template-columns: 2fr 1fr; }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    transition: border-color 0.2s;
+  }
+
+  .chart-card:hover { border-color: rgba(77,170,255,0.3); }
+
+  .chart-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .chart-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .chart-subtitle {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .chart-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    background: var(--surface2);
+    color: var(--muted);
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  .chart-wrap {
+    position: relative;
+  }
+
+  /* ── INSIGHT BOX ── */
+  .insight-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-top: 28px;
+  }
+
+  .insight-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    border-left: 3px solid var(--insight-color, var(--blue));
+  }
+
+  .insight-icon { font-size: 20px; margin-bottom: 8px; }
+
+  .insight-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .insight-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align: center;
+    padding: 32px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    margin-top: 40px;
+  }
+
+  footer a { color: var(--blue); text-decoration: none; }
+
+  @media (max-width: 900px) {
+    main { padding: 20px; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .row-2, .row-3 { grid-template-columns: 1fr; }
+    header { padding: 16px 20px; flex-wrap: wrap; gap: 12px; }
+    .insight-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">📊</div>
+    <div>
+      <div class="logo-text">Sales Analytics</div>
+      <div class="logo-sub">SUPERSTORE DATASET · 2014–2017</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="filter-group" id="yearFilter">
+      <button class="filter-btn active" onclick="filterYear('all', this)">All Years</button>
+      <button class="filter-btn" onclick="filterYear(2014, this)">2014</button>
+      <button class="filter-btn" onclick="filterYear(2015, this)">2015</button>
+      <button class="filter-btn" onclick="filterYear(2016, this)">2016</button>
+      <button class="filter-btn" onclick="filterYear(2017, this)">2017</button>
+    </div>
+    <div class="badge">Nelson Alves</div>
+  </div>
+</header>
+
+<main>
+  <div class="page-title">Business Intelligence Report</div>
+  <h1 class="page-heading">Sales <span>Performance</span> Overview</h1>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi-card" style="--kpi-color: var(--blue)">
+      <div class="kpi-label">Total Revenue</div>
+      <div class="kpi-value" id="kpi-sales">$2.51M</div>
+      <div class="kpi-sub kpi-up" id="kpi-sales-sub">↑ across 4 years</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color: var(--green)">
+      <div class="kpi-label">Total Profit</div>
+      <div class="kpi-value" id="kpi-profit">$300K</div>
+      <div class="kpi-sub kpi-up" id="kpi-profit-sub">↑ healthy growth</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color: var(--orange)">
+      <div class="kpi-label">Profit Margin</div>
+      <div class="kpi-value" id="kpi-margin">12.0%</div>
+      <div class="kpi-sub" id="kpi-margin-sub" style="color: var(--muted)">Net margin</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color: #A78BFA">
+      <div class="kpi-label">Total Orders</div>
+      <div class="kpi-value" id="kpi-orders">2,494</div>
+      <div class="kpi-sub" id="kpi-orders-sub" style="color: var(--muted)">Unique transactions</div>
+    </div>
+  </div>
+
+  <!-- Row 1: Trend + Category -->
+  <div class="chart-grid row-3" style="margin-bottom: 20px;">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Monthly Sales & Profit Trend</div>
+          <div class="chart-subtitle">Revenue and profitability over time</div>
+        </div>
+        <div class="chart-tag">TIME SERIES</div>
+      </div>
+      <div class="chart-wrap"><canvas id="trendChart" height="180"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Sales by Category</div>
+          <div class="chart-subtitle">Revenue distribution</div>
+        </div>
+        <div class="chart-tag">DONUT</div>
+      </div>
+      <div class="chart-wrap"><canvas id="categoryChart" height="180"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Row 2: Region + Sub-category -->
+  <div class="chart-grid row-2">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Profit by Region</div>
+          <div class="chart-subtitle">Geographic performance comparison</div>
+        </div>
+        <div class="chart-tag">BAR</div>
+      </div>
+      <div class="chart-wrap"><canvas id="regionChart" height="200"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Profit by Sub-Category</div>
+          <div class="chart-subtitle">Winners vs loss-makers</div>
+        </div>
+        <div class="chart-tag">RANKED BAR</div>
+      </div>
+      <div class="chart-wrap"><canvas id="subCatChart" height="200"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Insights -->
+  <div class="insight-row">
+    <div class="insight-card" style="--insight-color: var(--blue)">
+      <div class="insight-icon">🏆</div>
+      <div class="insight-title">Top Performer</div>
+      <div class="insight-text">Technology leads with $869K in revenue. Phones & Copiers are the most profitable sub-categories.</div>
+    </div>
+    <div class="insight-card" style="--insight-color: var(--red)">
+      <div class="insight-icon">⚠️</div>
+      <div class="insight-title">Loss-Making Products</div>
+      <div class="insight-text">Tables and Bookcases generate negative profit despite high sales volume — discount strategy review needed.</div>
+    </div>
+    <div class="insight-card" style="--insight-color: var(--green)">
+      <div class="insight-icon">📈</div>
+      <div class="insight-title">Growth Opportunity</div>
+      <div class="insight-text">2017 shows the highest revenue ($693K). Scaling Technology & Office Supplies in the South region shows strong ROI.</div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  Built by <a href="https://linkedin.com/in/nelson-alves-042477234">Nelson Alves</a> &nbsp;·&nbsp;
+  Data: Superstore Dataset (Kaggle) &nbsp;·&nbsp;
+  Tools: Python · Chart.js · HTML/CSS
+</footer>
+
+<script>
+// ── RAW DATA ──────────────────────────────────────────────
+const RAW = {
+  monthly: [{"Month":"2014-01","Sales":69381.68,"Profit":7404.97},{"Month":"2014-02","Sales":42776.79,"Profit":5671.72},{"Month":"2014-03","Sales":76320.46,"Profit":9913.42},{"Month":"2014-04","Sales":38789.70,"Profit":5925.77},{"Month":"2014-05","Sales":36095.38,"Profit":3583.38},{"Month":"2014-06","Sales":35566.21,"Profit":2454.52},{"Month":"2014-07","Sales":39366.14,"Profit":3746.09},{"Month":"2014-08","Sales":52545.58,"Profit":7465.42},{"Month":"2014-09","Sales":73202.17,"Profit":9918.91},{"Month":"2014-10","Sales":36103.84,"Profit":3452.27},{"Month":"2014-11","Sales":47514.04,"Profit":6817.35},{"Month":"2014-12","Sales":77428.99,"Profit":9359.89},{"Month":"2015-01","Sales":74075.51,"Profit":6394.42},{"Month":"2015-02","Sales":45701.51,"Profit":5138.93},{"Month":"2015-03","Sales":46295.83,"Profit":7445.63},{"Month":"2015-04","Sales":66541.12,"Profit":8136.10},{"Month":"2015-05","Sales":71568.98,"Profit":9942.99},{"Month":"2015-06","Sales":38949.72,"Profit":4144.27},{"Month":"2015-07","Sales":54258.18,"Profit":6815.32},{"Month":"2015-08","Sales":40920.79,"Profit":3456.50},{"Month":"2015-09","Sales":36284.62,"Profit":4906.14},{"Month":"2015-10","Sales":45590.09,"Profit":5732.36},{"Month":"2015-11","Sales":36905.05,"Profit":5467.46},{"Month":"2015-12","Sales":72621.86,"Profit":8515.99},{"Month":"2016-01","Sales":62979.48,"Profit":8172.99},{"Month":"2016-02","Sales":30346.33,"Profit":4518.25},{"Month":"2016-03","Sales":57182.26,"Profit":7986.90},{"Month":"2016-04","Sales":50960.37,"Profit":7091.83},{"Month":"2016-05","Sales":30820.24,"Profit":3810.95},{"Month":"2016-06","Sales":57888.89,"Profit":7833.61},{"Month":"2016-07","Sales":52029.50,"Profit":7118.29},{"Month":"2016-08","Sales":30315.40,"Profit":3361.59},{"Month":"2016-09","Sales":34811.15,"Profit":3172.59},{"Month":"2016-10","Sales":54371.51,"Profit":5333.15},{"Month":"2016-11","Sales":39558.74,"Profit":4735.74},{"Month":"2016-12","Sales":57609.79,"Profit":7280.90},{"Month":"2017-01","Sales":57904.54,"Profit":6610.49},{"Month":"2017-02","Sales":36168.57,"Profit":3632.49},{"Month":"2017-03","Sales":68722.80,"Profit":7562.33},{"Month":"2017-04","Sales":39186.88,"Profit":3567.97},{"Month":"2017-05","Sales":36430.92,"Profit":3916.47},{"Month":"2017-06","Sales":77142.45,"Profit":7110.10},{"Month":"2017-07","Sales":52192.42,"Profit":6279.64},{"Month":"2017-08","Sales":68925.22,"Profit":9752.47},{"Month":"2017-09","Sales":72783.52,"Profit":7898.72},{"Month":"2017-10","Sales":82021.61,"Profit":9834.15},{"Month":"2017-11","Sales":70637.11,"Profit":8763.16},{"Month":"2017-12","Sales":31133.13,"Profit":3257.73}],
+  categories: [{"Category":"Furniture","Sales":777968.93,"Profit":3695.42},{"Category":"Office Supplies","Sales":859899.48,"Profit":107143.71},{"Category":"Technology","Sales":869058.66,"Profit":189573.20}],
+  regions: [{"Region":"Central","Profit":71941.82,"Sales":590229.57},{"Region":"East","Profit":68221.19,"Sales":628944.57},{"Region":"South","Profit":81779.04,"Sales":654419.74},{"Region":"West","Profit":78470.28,"Sales":633333.19}],
+  subCats: [{"Sub-Category":"Tables","Profit":-23449.06},{"Sub-Category":"Bookcases","Profit":-22617.97},{"Sub-Category":"Paper","Profit":21838.63},{"Sub-Category":"Chairs","Profit":22795.00},{"Sub-Category":"Storage","Profit":23297.16},{"Sub-Category":"Furnishings","Profit":26967.45},{"Sub-Category":"Machines","Profit":30219.97},{"Sub-Category":"Envelopes","Profit":30884.98},{"Sub-Category":"Binders","Profit":31122.94},{"Sub-Category":"Accessories","Profit":50191.44},{"Sub-Category":"Copiers","Profit":52339.43},{"Sub-Category":"Phones","Profit":56822.36}],
+  byYear: {"2014":{"sales":625090.98,"profit":75713.71,"orders":625},"2015":{"sales":629713.26,"profit":76096.11,"orders":631},"2016":{"sales":558873.66,"profit":70416.79,"orders":615},"2017":{"sales":693249.17,"profit":78185.72,"orders":623}}
+};
+
+const COLORS = {
+  blue: '#4DAAFF', green: '#3DFFA0', orange: '#FF8C42',
+  red: '#FF4D6D', purple: '#A78BFA', muted: '#6B7280',
+  surface2: '#1C2030', border: '#252A3A', text: '#E8EAF0'
+};
+
+Chart.defaults.color = COLORS.muted;
+Chart.defaults.font.family = "'DM Mono', monospace";
+
+let charts = {};
+let currentYear = 'all';
+
+function fmt(n) {
+  if (n >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return '$' + (n/1e3).toFixed(0) + 'K';
+  return '$' + n.toFixed(0);
+}
+
+function getMonthly(year) {
+  if (year === 'all') return RAW.monthly;
+  return RAW.monthly.filter(d => d.Month.startsWith(String(year)));
+}
+
+function updateKPIs(year) {
+  let sales, profit, orders;
+  if (year === 'all') {
+    sales = 2506927.07; profit = 300412.33; orders = 2494;
+  } else {
+    const y = RAW.byYear[year];
+    sales = y.sales; profit = y.profit; orders = y.orders;
+  }
+  const margin = (profit / sales * 100).toFixed(1);
+  document.getElementById('kpi-sales').textContent = fmt(sales);
+  document.getElementById('kpi-profit').textContent = fmt(profit);
+  document.getElementById('kpi-margin').textContent = margin + '%';
+  document.getElementById('kpi-orders').textContent = orders.toLocaleString();
+}
+
+function buildTrend(year) {
+  const data = getMonthly(year);
+  const labels = data.map(d => d.Month.replace('-', ' '));
+  const sales = data.map(d => d.Sales);
+  const profit = data.map(d => d.Profit);
+
+  if (charts.trend) charts.trend.destroy();
+  const ctx = document.getElementById('trendChart').getContext('2d');
+
+  const gradBlue = ctx.createLinearGradient(0, 0, 0, 300);
+  gradBlue.addColorStop(0, 'rgba(77,170,255,0.3)');
+  gradBlue.addColorStop(1, 'rgba(77,170,255,0)');
+
+  charts.trend = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Sales', data: sales, borderColor: COLORS.blue, backgroundColor: gradBlue, borderWidth: 2.5, fill: true, tension: 0.4, pointRadius: 0, pointHoverRadius: 5 },
+        { label: 'Profit', data: profit, borderColor: COLORS.green, backgroundColor: 'transparent', borderWidth: 2, borderDash: [5,4], fill: false, tension: 0.4, pointRadius: 0, pointHoverRadius: 5 }
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { labels: { color: COLORS.muted, font: { size: 11 }, boxWidth: 20 } },
+        tooltip: {
+          backgroundColor: '#1C2030',
+          borderColor: '#252A3A',
+          borderWidth: 1,
+          callbacks: { label: ctx => ' ' + ctx.dataset.label + ': ' + fmt(ctx.raw) }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { maxTicksLimit: 12, color: COLORS.muted, font: { size: 10 } } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { callback: v => fmt(v), color: COLORS.muted, font: { size: 10 } } }
+      }
+    }
+  });
+}
+
+function buildCategory() {
+  if (charts.cat) charts.cat.destroy();
+  const ctx = document.getElementById('categoryChart').getContext('2d');
+  charts.cat = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: RAW.categories.map(d => d.Category),
+      datasets: [{
+        data: RAW.categories.map(d => d.Sales),
+        backgroundColor: [COLORS.orange, COLORS.purple, COLORS.blue],
+        borderWidth: 0,
+        hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      cutout: '65%',
+      plugins: {
+        legend: { position: 'bottom', labels: { color: COLORS.muted, font: { size: 11 }, padding: 16, boxWidth: 12 } },
+        tooltip: {
+          backgroundColor: '#1C2030',
+          borderColor: '#252A3A',
+          borderWidth: 1,
+          callbacks: { label: ctx => ' ' + ctx.label + ': ' + fmt(ctx.raw) }
+        }
+      }
+    }
+  });
+}
+
+function buildRegion() {
+  if (charts.region) charts.region.destroy();
+  const ctx = document.getElementById('regionChart').getContext('2d');
+  const sorted = [...RAW.regions].sort((a,b) => b.Profit - a.Profit);
+  charts.region = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sorted.map(d => d.Region),
+      datasets: [{
+        label: 'Profit',
+        data: sorted.map(d => d.Profit),
+        backgroundColor: sorted.map(d => d.Profit >= 0 ? COLORS.blue : COLORS.red),
+        borderRadius: 6,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor: '#1C2030', borderColor: '#252A3A', borderWidth: 1, callbacks: { label: ctx => ' Profit: ' + fmt(ctx.raw) } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: COLORS.muted } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { callback: v => fmt(v), color: COLORS.muted } }
+      }
+    }
+  });
+}
+
+function buildSubCat() {
+  if (charts.sub) charts.sub.destroy();
+  const ctx = document.getElementById('subCatChart').getContext('2d');
+  charts.sub = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: RAW.subCats.map(d => d['Sub-Category']),
+      datasets: [{
+        label: 'Profit',
+        data: RAW.subCats.map(d => d.Profit),
+        backgroundColor: RAW.subCats.map(d => d.Profit >= 0 ? COLORS.green : COLORS.red),
+        borderRadius: 4,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor: '#1C2030', borderColor: '#252A3A', borderWidth: 1, callbacks: { label: ctx => ' Profit: ' + fmt(ctx.raw) } }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { callback: v => fmt(v), color: COLORS.muted, font: { size: 10 } } },
+        y: { grid: { display: false }, ticks: { color: COLORS.muted, font: { size: 10 } } }
+      }
+    }
+  });
+}
+
+function filterYear(year, btn) {
+  currentYear = year;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  updateKPIs(year);
+  buildTrend(year);
+}
+
+function init() {
+  buildTrend('all');
+  buildCategory();
+  buildRegion();
+  buildSubCat();
+  updateKPIs('all');
+}
+
+window.addEventListener('load', init);
+</script>
+</body>
+</html>
